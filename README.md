@@ -1,5 +1,15 @@
 # Distance Scoring Metrics
 
+# Our version of MAD
+I am currently implementing a version of mad that limits to std for a symmetric gaussian distribution.
+Instead of using Q75 and Q25, I am using Q86 and Q14, to better approximate 1 sigma of a gaussian distribution
+
+# Hybrid Tests
+v1 corresponds to improved consistent probability with mean and std
+v2 corresponds to improved consistent probability with median and mad
+v3 corresponds to improved consistent probability with median and std
+v4 corresponds to current consistent probability with median and mad
+
 # Scoring Results
 Check out/jsd_uniform folder for images of the test_pdf, base_pdf and their final scores.
 The out/entropy_uniform was just some testing with a different way to calculate how similar
