@@ -11,7 +11,8 @@ Some intuitive limitations that I can think of from how the current distance sco
 ## Justification for the logistic weighting parameters (r0 = 1, k = 4)
 
 The hybrid score blends the top-hat and BC branches with `w(r) = 1 / (1 + exp(-k(r - r0)))`,
-where `r = sigma_gal / sigma_gw` is the width ratio. The parameter choices are not arbitrary:
+where `r = sigma_cand / sigma_gw` is the width ratio (with `sigma_cand` the naive average
+of the candidate's two tails, per `sigma_ratio`). The parameter choices are not arbitrary:
 
 ### Setting r0 = 1
 
