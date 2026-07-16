@@ -1,0 +1,5 @@
+Some intuitive limitations that I can think of from how the current distance scoring works
+- Bhattachary Coefficient is not a good distance metric (in distribution space), and therefore consider a more common sqrt(1 - BC**2), or something similar to that to actually compute something like the dot product rather than the distance in distribution space
+- The weights consider the average of the tails, and it is an even average, so high asymmetric distributions are treated the same as symmetric distributions. This is fine for the most part, but some weighting considerations could be implemented depending on which side of the mode it is on, similar to the consistentency_probability method almost
+- The tophat score essentially checks whether it is within 2 sigma in a smooth box using sigmoid functions (why not consider something similar to the z-score or something like that?)
+- Additionally, considering a box, this loses ranking information, so a candidate that is 0.5sigma and 1.5 sigma will get the same score, which is undesirable?
