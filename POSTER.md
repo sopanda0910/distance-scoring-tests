@@ -1,5 +1,20 @@
 # Poster Plan — Distance Scoring for GW Counterpart Candidate Vetting
 
+## Research Question
+
+**How can we quantitatively score the consistency between a candidate host galaxy's distance estimate and a gravitational-wave event's distance posterior — in a way that treats spectroscopic and photometric redshifts on equal footing, preserves the ranking of candidates, and is fast enough for real-time follow-up?**
+
+Existing overlap metrics (Bhattacharyya coefficient) penalize precisely-measured spec-z hosts for width mismatch even when their distance is exactly right, while purely point-estimate methods discard the shape information that broad photo-z PDFs do carry. A single scoring statistic must ask the right question in each regime.
+
+## Outcomes
+
+We developed **Hybrid BC/Tophat V3**, a distance-scoring statistic that blends a heavy-tailed top-hat (consistency) branch with an analytic Bhattacharyya overlap branch, weighted by a logistic function of the host-to-GW width ratio (r₀ = 1, k = 4) and built on robust median/MAD statistics. Validated on 23 synthetic stress-case PDFs and 2112 real candidate hosts from S251112cm:
+
+- Correctly scores perfectly-placed spec-z hosts at ~1.0 where the baseline BC gave 0.62.
+- Preserves candidate ranking even far outside the GW posterior via the heavy-tailed top-hat.
+- On real data, scores track the actual GW distance PDF, and V3 improves consistency for well-measured hosts in the 20–200 Mpc transition zone (score differences up to +0.6 over the previous hybrid).
+- Runs in tens of microseconds per candidate — negligible against the ~7–10 s per-candidate network/DB wait in live follow-up.
+
 ## 1. Background & Motivation
 
 Start with background about the BNS/Kilonova and the other things we are searching for
@@ -8,15 +23,15 @@ Start with background about the BNS/Kilonova and the other things we are searchi
 - Introduce the concept of TROVE/SAGUARO and why the scoring matters
 - GW events localize sources in 3D (sky area × luminosity distance). Optical surveys produce hundreds–thousands of transient candidates per event; the *distance posterior of each candidate's host galaxy* is one of the strongest discriminants we have — but only if we score the agreement between the two PDFs correctly.
 
-## 2. Scoring Pipeline Context
+## 2. Scoring Context
 
 - Add the flowchart image of all of the different aspects of scoring (from Noah's distance scoring paper) — distance score is one term among several (sky position, photometric evolution, etc.)
 - Potentially add some of the correlation analysis
 - Transition to the distance scoring and how it is currently done: the **Bhattacharyya Coefficient (BC)**, `BC = ∫ √(p_GW · p_host) dD`
 
-## 3. Design Requirements (what a "good" distance score must do)
+## 3. Design Requirements (what a "good" distance score is)
 
-Recommended as an explicit box on the poster, so each iteration can be judged against fixed criteria.
+An explicit box on the poster, so each iteration can be judged against fixed criteria.
 
 1. Bounded in [0, 1]; identical PDFs → 1; disjoint PDFs → 0.
 2. A **spec-z galaxy at exactly the right distance must score ~1**, even though its PDF shape looks nothing like the GW posterior (this is where BC fails).
@@ -28,10 +43,10 @@ Recommended as an explicit box on the poster, so each iteration can be judged ag
 ## 4. spec-z vs photo-z: why one metric can't serve both (Maybe include this later on?)
 
 - Short background box: what spec-z and photo-z are, typical uncertainties, and why the desired scores differ by regime.
-- **The asymmetry-of-information point:** the GW distance distribution is roughly Gaussian and well-characterized; host distances come either from spectroscopic redshifts (near delta-functions) or photometric redshifts (broad, often asymmetric, sometimes nearly uninformative). A single naive overlap metric cannot serve both regimes — this is the thesis of the whole poster, and it's what every iteration below is converging toward.
-- For sharp PDFs the right question is *"is the point estimate consistent with the GW posterior?"*; for broad PDFs it is *"how much do the distributions overlap?"* — the hybrid exists to ask each question in its proper regime.
+- The GW distance distribution is roughly Gaussian and well-characterized; host distances come either from spectroscopic redshifts (near delta-functions) or photometric redshifts (broad, often asymmetric, sometimes nearly uninformative). A single naive overlap metric cannot serve both regimes — this is the thesis of the whole poster, and it's what every iteration below is converging toward.
+- For sharp PDFs the right question is "is the point estimate consistent with the GW posterior?"; for broad PDFs it is "how much do the distributions overlap?" — the hybrid exists to ask each question in its proper regime.
 
-## 5. Iterations of the Distance Score — with selected figures
+## 5. Iterations of the Distance Score
 
 > Figure convention in the repo plots: **red = GW posterior, gray = host galaxy PDF**. Same 20+ synthetic test cases (delta functions, wide/very-wide, offset, skewed) reused across every method, which makes side-by-side comparison honest.
 
@@ -39,7 +54,7 @@ Recommended as an explicit box on the poster, so each iteration can be judged ag
 
 ![BC fails on a perfect spec-z](pres/bc/deltafunc_pdf.png)
 
-- `pres/bc/deltafunc_pdf.png` — a spec-z host **perfectly centered** on the GW mean scores only **0.62**. BC penalizes pure width mismatch even when the distance is exactly right: `BC_centered(r) = √(2r/(1+r²))` for width ratio r, so a correct sharp galaxy at r = 0.2 incurs a 38% penalty *for being correct*.
+- `pres/bc/deltafunc_pdf.png` — a spec-z host **perfectly centered** on the GW mean scores only **0.62**. BC penalizes pure width mismatch even when the distance is exactly right: `BC_centered(r) = √(2r/(1+r²))` for width ratio r, so a correct sharp galaxy at r = 0.2 incurs a 38% penalty for being correct.
 - Pair it directly with `pres/hybrid/deltafunc_pdf.png` (same case, hybrid score = **1.0**) as a before/after — this two-panel pair is the strongest single visual on the poster.
 
 ### 5.1 Information-theory metrics (JSD to GW posterior × JSD to uniform, + Wasserstein)
@@ -50,7 +65,7 @@ Recommended as an explicit box on the poster, so each iteration can be judged ag
   ![bc and Conditional JSD Metric, score vs distance](real_data/distance_metric_bias_bc_info_score_vs_distance.png)
 
   The earliest two approaches on real S251112cm data — plain Bhattacharyya coefficient (`bc`) and the JSD/z-score hybrid (`Conditional JSD Metric`), both with the GW distance curve overlaid. `bc` tracks the GW distance curve fairly cleanly; `Conditional JSD Metric` mostly does too, but has a cluster of anomalously high scores (~0.8–1.0) for photo-z hosts out at ~2,000–10,000 Mpc — a clear failure mode of the pure JSD-based approach that motivated moving toward the Consistent Probability family.
-- Verdict for poster: right instincts (separate *shape agreement* from *information content*), wrong machinery — and the real-data failure at large distance makes the case concretely.
+- Verdict for poster: right instincts (separate shape agreement from information content), wrong machinery — and the real-data failure at large distance makes the case concretely.
 
 ### 5.2 Consistency-probability method
 
